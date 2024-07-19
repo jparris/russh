@@ -319,6 +319,25 @@ impl<S: From<(ChannelId, ChannelMsg)> + Send + Sync + 'static> Channel<S> {
     pub async fn close(&self) -> Result<(), Error> {
         self.send_msg(ChannelMsg::Close).await
     }
+
+     /// Get a `FnOnce` that can be used to Request that the channel be closed.
+     pub fn get_close(&self) -> impl FnOnce(Sig) -> Pin<Box<dyn Future<Output = Result<(), Error>> + std::marker::Send>> {
+        let sender = self.sender.clone();
+        let id = self.id;
+
+        move |signal| {
+            async move {
+                sender
+                    .send((id, ChannelMsg::Signal { signal }).into())
+                    .await
+                    .map_err(|_| Error::SendError)?;
+
+                Ok(())
+            }
+            .boxed()
+        }
+    }
+    
     /// Get a `FnOnce` that can be used to send a signal through this channel
     pub fn get_signal_sender(
         &self,
