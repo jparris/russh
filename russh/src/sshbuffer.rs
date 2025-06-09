@@ -83,6 +83,7 @@ impl SSHBuffer {
     }
 
     pub fn send_ssh_id(&mut self, id: &SshId) {
+        println!("JDP {id:#?}");
         id.write(&mut self.buffer);
     }
 }
